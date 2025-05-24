@@ -1,0 +1,38 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+
+# === Editor / System Files ===
+*.swp
+.DS_Store
+*.log
+*.bak
+*.tmp
+.idea/
+.vscode/
+
+# === Docker / Build Artifacts ===
+*.tar
+*.img
+*.gz
+.buildcache/
+build/
+dist/
+
+# === Scripts that shouldn't be committed (if temp) ===
+*.sh~
+rewrite_initial_commit.sh
+
+# === Keys or Signing Artifacts ===
+*.minisign.key
+*.minisign.pub
+*.pem
+*.key
+*.crt
+keymap.json
+
+# === Temporary or Test Files ===
+tmp/
+.signing/
+

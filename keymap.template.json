@@ -1,0 +1,14 @@
+{
+  "default-key": {
+    "key_id": "ABCD1234",
+    "private_key_path": "/keys/your-signing-key.minisign.key",
+    "description": "Used for production manifest signing",
+    "expires": "2025-12-31"
+  },
+  "testing-key": {
+    "key_id": "DB3AD589",
+    "private_key_path": "/keys/test-signing-key.minisign.key",
+    "description": "For local dev/test signing",
+    "expires": "2024-12-31"
+  }
+}
