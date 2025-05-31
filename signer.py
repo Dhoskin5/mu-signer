@@ -1,71 +1,69 @@
 #!/usr/bin/env python3
-import os
-import sys
+import argparse
 import json
 import subprocess
-import argparse
-from pathlib import Path
+import sys
+import os
+import pexpect
 
 def load_keymap(path):
-    with open(path, 'r') as f:
+    with open(path, "r") as f:
         return json.load(f)
 
-def get_key_entry(keymap, key_id=None):
-    if key_id:
-        return key_id, keymap[key_id]
-    # Use first key as default
-    first_id = next(iter(keymap))
-    return first_id, keymap[first_id]
+def get_key_entry(keymap, key_id):
+    if key_id not in keymap:
+        raise KeyError(f"Key ID '{key_id}' not found in keymap.")
+    return keymap[key_id]
 
-def sign_manifest(manifest_path, private_key_path):
-    result = subprocess.run([
-        "minisign",
-        "-S",
-        "-s", private_key_path,
-        "-m", manifest_path,
-        "-x", "manifest.signed.json.minisig"
-    ], capture_output=True, text=True)
+def verify_manifest_key_id(manifest_path, expected_key_id):
+    with open(manifest_path, "r") as f:
+        manifest = json.load(f)
+    manifest_key_id = manifest.get("key_id")
+    if manifest_key_id != expected_key_id:
+        raise ValueError(f"Manifest key_id '{manifest_key_id}' does not match expected key_id '{expected_key_id}'")
 
-    if result.returncode != 0:
-        print("Signing failed:", result.stderr)
+def sign_manifest(manifest_path, private_key_path, password):
+    print(f"Signing with key: {private_key_path}")
+    cmd = f"minisign -S -s {private_key_path} -m {manifest_path} -x {manifest_path}.minisig"
+
+    child = pexpect.spawn(cmd, encoding="utf-8")
+
+    try:
+        child.expect("(?i)password:", timeout=5)  # case-insensitive match
+        child.sendline(password)
+        child.expect(pexpect.EOF)
+    except pexpect.exceptions.EOF:
+        print("minisign exited unexpectedly.")
+        sys.exit(1)
+    except pexpect.exceptions.TIMEOUT:
+        print("minisign password prompt timeout.")
         sys.exit(1)
 
-def extract_key_id(sigfile):
-    with open(sigfile, 'r') as f:
-        for line in f:
-            if line.startswith("untrusted comment:"):
-                return line.strip().split()[-1]
-    raise RuntimeError("Unable to extract key ID")
-
-def inject_key_id(manifest_path, key_id, output_path):
-    with open(manifest_path, 'r') as f:
-        manifest = json.load(f)
-    manifest["key_id"] = key_id
-    with open(output_path, 'w') as f:
-        json.dump(manifest, f, indent=2)
+    if child.exitstatus != 0:
+        print("Signing failed.")
+        sys.exit(child.exitstatus)
 
 def main():
     parser = argparse.ArgumentParser(description="Sign a manifest.json using a private key from keymap.json")
-    parser.add_argument("--manifest", default="manifest.json", help="Path to manifest.json")
-    parser.add_argument("--keymap", default="keymap.json", help="Path to keymap.json")
-    parser.add_argument("--key-id", help="Key ID to use (defaults to first in keymap)")
+    parser.add_argument("--manifest", required=True, help="Path to manifest.json")
+    parser.add_argument("--keymap", required=True, help="Path to keymap.json")
+    parser.add_argument("--key-id", required=True, help="Key ID to use for signing")
+    parser.add_argument("--password", default="", help="Password for signing key (can be empty)")
+    parser.add_argument("--key-dir", default=".", help="Directory containing private keys")
+
     args = parser.parse_args()
 
-    keymap = load_keymap(args.keymap)
-    key_id, key_entry = get_key_entry(keymap, args.key_id)
     manifest_path = args.manifest
+    keymap = load_keymap(args.keymap)
+    key_entry = get_key_entry(keymap, args.key_id)
+    private_key_path = os.path.join(args.key_dir, key_entry["private_key"])
 
-    print(f"Signing manifest with key ID: {key_id}")
+    verify_manifest_key_id(manifest_path, args.key_id)
 
-    sign_manifest(manifest_path, os.path.expanduser(key_entry["private_key"]))
-    injected_manifest = "manifest.signed.json"
-    inject_key_id(manifest_path, key_id, injected_manifest)
-    
-    actual_id = extract_key_id("manifest.signed.json.minisig")
-    if actual_id != key_id:
-        raise RuntimeError(f"Key ID mismatch! Expected {key_id}, got {actual_id}")
+    print(f"Signing manifest using key ID: {args.key_id}")
+    sign_manifest(manifest_path, private_key_path, args.password)
 
-    print(f"Output: {injected_manifest}, manifest.signed.json.minisig")
+    print(f"Output: {manifest_path}.minisig")
 
 if __name__ == "__main__":
     main()

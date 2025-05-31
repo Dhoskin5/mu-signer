@@ -1,14 +1,20 @@
 {
-  "default-key": {
-    "key_id": "ABCD1234",
-    "private_key_path": "/keys/your-signing-key.minisign.key",
-    "description": "Used for production manifest signing",
-    "expires": "2025-12-31"
+  "ABABABABABABABAB": {
+    "description": "Default prod signing key (2025)",
+    "private_key": "key-1.sec",
+    "pubkey_file": "key-1.pub",
+    "expires": "2026-01-01"
   },
-  "testing-key": {
-    "key_id": "DB3AD589",
-    "private_key_path": "/keys/test-signing-key.minisign.key",
-    "description": "For local dev/test signing",
-    "expires": "2024-12-31"
+  "ABABABABABABABAC": {
+    "description": "Alternate prod signing key (2025)",
+    "private_key": "key-2.sec",
+    "pubkey_file": "key-2.pub",
+    "expires": "2026-01-01"
+  },
+  "ABABABABABABABAD": {
+    "description": "Alternate prod signing key (2025)",
+    "private_key": "key-3.sec",
+    "pubkey_file": "key-3.pub",
+    "expires": "2026-01-01"
   }
 }

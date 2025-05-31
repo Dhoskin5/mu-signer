@@ -22,8 +22,11 @@ RUN apt-get update && apt-get install -y \
     cd .. && rm -rf minisign && \
     rm -rf /var/lib/apt/lists/*
 
-# Add your signer tool and keymap
-COPY keymap.json ./keymap.json
+
+# Python packages
+RUN pip install --no-cache-dir pexpect
+
+# Add your signer script
 COPY signer.py ./signer.py
 
 # Default entrypoint (can override)
